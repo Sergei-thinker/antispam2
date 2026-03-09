@@ -56,20 +56,54 @@ async def _process_message(
     )
 
     # --- Guard clauses ---
+
+    # Skip auto-forwarded channel posts (channel's own content mirrored to group)
+    if getattr(message, "is_automatic_forward", False):
+        logger.debug("message.skip_auto_forward")
+        return
+
     if message.from_user is None:
         logger.info("message.skip_no_user")
         return
 
-    if message.from_user.is_bot:
+    # Determine the real sender: either a channel (sender_chat) or a user (from_user)
+    sender_chat = getattr(message, "sender_chat", None)
+    is_channel_comment = (
+        message.from_user.id == 136817688  # Channel_Bot
+        and sender_chat is not None
+    )
+    is_anon_admin = message.from_user.id == 1087968824  # GroupAnonymousBot
+
+    if is_anon_admin:
+        logger.debug("message.skip_anon_admin")
+        return
+
+    # Skip real bots (not Channel_Bot relaying channel messages)
+    if message.from_user.is_bot and not is_channel_comment:
         logger.info("message.skip_is_bot", user_id=message.from_user.id)
         return
 
-    if is_admin(message.from_user.id, settings):
+    # For channel comments, use sender_chat info; for users, use from_user
+    if is_channel_comment:
+        effective_user_id = sender_chat.id
+        effective_username = getattr(sender_chat, "username", None)
+        effective_name = sender_chat.title or "Channel"
+        logger.info(
+            "message.channel_comment",
+            channel_id=sender_chat.id,
+            channel_title=sender_chat.title,
+        )
+    else:
+        effective_user_id = message.from_user.id
+        effective_username = message.from_user.username
+        effective_name = message.from_user.first_name or ""
+
+    if not is_channel_comment and is_admin(message.from_user.id, settings):
         logger.info("message.skip_admin", user_id=message.from_user.id)
         return
 
-    if await db.is_whitelisted(message.from_user.id):
-        logger.info("message.skip_whitelisted", user_id=message.from_user.id)
+    if await db.is_whitelisted(effective_user_id):
+        logger.info("message.skip_whitelisted", user_id=effective_user_id)
         return
 
     text = message.text or message.caption or ""
@@ -81,18 +115,26 @@ async def _process_message(
     await db.increment_stat(today_str, "messages_checked")
 
     # --- Profile ---
-    try:
-        profile = await profile_analyzer.get_profile(message.from_user, message.chat.id)
-    except Exception as exc:
-        logger.error("message.profile_error", user_id=message.from_user.id, error=str(exc))
-        # Continue with a minimal profile so we don't skip the check
-        from .models import UserProfile
+    from .models import UserProfile
+    if is_channel_comment:
+        # Channel comment: build profile from sender_chat
         profile = UserProfile(
-            user_id=message.from_user.id,
-            first_name=message.from_user.first_name or "",
-            last_name=message.from_user.last_name,
-            username=message.from_user.username,
+            user_id=effective_user_id,
+            first_name=effective_name,
+            last_name=None,
+            username=effective_username,
         )
+    else:
+        try:
+            profile = await profile_analyzer.get_profile(message.from_user, message.chat.id)
+        except Exception as exc:
+            logger.error("message.profile_error", user_id=message.from_user.id, error=str(exc))
+            profile = UserProfile(
+                user_id=message.from_user.id,
+                first_name=message.from_user.first_name or "",
+                last_name=message.from_user.last_name,
+                username=message.from_user.username,
+            )
 
     # --- Few-shot examples ---
     try:
@@ -112,9 +154,12 @@ async def _process_message(
         except Exception as exc:
             logger.warning("message.delete_error", error=str(exc))
 
-        # 2. Ban the user
+        # 2. Ban the sender (for channels: ban sender_chat; for users: ban user)
         try:
-            await message.chat.ban(message.from_user.id)
+            if is_channel_comment and sender_chat:
+                await message.chat.ban_sender_chat(sender_chat.id)
+            else:
+                await message.chat.ban(message.from_user.id)
         except Exception as exc:
             logger.warning("message.ban_error", error=str(exc))
 
@@ -122,8 +167,8 @@ async def _process_message(
         await db.log_message(
             message_id=message.message_id,
             chat_id=message.chat.id,
-            user_id=message.from_user.id,
-            username=message.from_user.username,
+            user_id=effective_user_id,
+            username=effective_username,
             message_text=text,
             is_edited=is_edited,
             verdict_spam=verdict.is_spam,
@@ -134,9 +179,9 @@ async def _process_message(
 
         # 4. Record banned user
         await db.add_banned_user(
-            user_id=message.from_user.id,
+            user_id=effective_user_id,
             chat_id=message.chat.id,
-            username=message.from_user.username,
+            username=effective_username,
             reason=verdict.reason,
             confidence=verdict.confidence,
             message_text=text[:500],
@@ -145,9 +190,9 @@ async def _process_message(
 
         # 5. Save as spam example for few-shot learning
         await db.add_spam_example(
-            user_id=message.from_user.id,
+            user_id=effective_user_id,
             message_text=text,
-            username=message.from_user.username,
+            username=effective_username,
             first_name=profile.first_name,
             last_name=profile.last_name,
             bio=profile.bio,
