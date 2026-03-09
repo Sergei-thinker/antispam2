@@ -81,7 +81,7 @@ ADMIN_IDS=123456789,987654321           # Comma-separated admin Telegram IDs
 CHANNEL_ID=-1001234567890               # Telegram channel ID
 
 # Optional (with defaults)
-AI_MODEL=anthropic/claude-sonnet-4       # OpenRouter model ID
+AI_MODEL=anthropic/claude-sonnet-4.6     # OpenRouter model ID
 SPAM_CONFIDENCE_THRESHOLD=0.7           # Minimum confidence to classify as spam (0.0-1.0)
 MAX_AI_CALLS_PER_MINUTE=20              # Rate limit for AI API calls
 OPENROUTER_TIMEOUT=30                   # API timeout in seconds
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str
     ADMIN_IDS: list[int]
     CHANNEL_ID: int
-    AI_MODEL: str = "anthropic/claude-sonnet-4"
+    AI_MODEL: str = "anthropic/claude-sonnet-4.6"
     # ...
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

@@ -73,19 +73,19 @@ async def cmd_start(message: Message, settings: Settings, **_: Any) -> None:
         return
 
     text = (
-        "Antispam Bot v2\n"
+        "Антиспам Бот v2\n"
         "\n"
-        "AI-powered spam protection for Telegram channel comments.\n"
+        "AI-защита комментариев Telegram-канала от спама.\n"
         "\n"
-        "Features:\n"
-        "- Automatic spam detection via LLM\n"
-        "- User profile analysis (name, bio, photo)\n"
-        "- Few-shot learning from confirmed spam examples\n"
-        "- Real-time admin notifications with one-click unban\n"
-        "- Whitelist and ban management\n"
-        "- Detailed moderation statistics\n"
+        "Возможности:\n"
+        "- Автоматическое обнаружение спама через LLM\n"
+        "- Анализ профиля пользователя (имя, био, фото)\n"
+        "- Обучение на подтверждённых примерах спама\n"
+        "- Уведомления админам с кнопкой разбана\n"
+        "- Управление вайтлистом и банами\n"
+        "- Подробная статистика модерации\n"
         "\n"
-        "Use /help to see available commands."
+        "Используйте /help для списка команд."
     )
     await message.answer(text)
     logger.info("cmd.start", user_id=message.from_user.id if message.from_user else None)
@@ -103,19 +103,19 @@ async def cmd_help(message: Message, settings: Settings, **_: Any) -> None:
             return
 
     text = (
-        "Available commands:\n"
+        "Доступные команды:\n"
         "\n"
-        "/start - Welcome message and feature overview\n"
-        "/help  - Show this help message\n"
-        "/stats - Moderation statistics (today / 7 days / all time)\n"
-        "/status - Bot operational status and settings\n"
-        "/whitelist add <user_id> - Add user to whitelist\n"
-        "/whitelist remove <user_id> - Remove user from whitelist\n"
-        "/whitelist list - Show all whitelisted users\n"
-        "/unban <user_id> - Unban a user\n"
-        "/recent - Last 10 moderation decisions\n"
+        "/start — Приветствие и описание бота\n"
+        "/help — Список команд\n"
+        "/stats — Статистика модерации (сегодня / 7 дней / всё время)\n"
+        "/status — Состояние бота и настройки\n"
+        "/whitelist add <user_id> — Добавить в вайтлист\n"
+        "/whitelist remove <user_id> — Убрать из вайтлиста\n"
+        "/whitelist list — Показать вайтлист\n"
+        "/unban <user_id> — Разбанить пользователя\n"
+        "/recent — Последние 10 решений модерации\n"
         "\n"
-        "Admin commands require membership in the admin list."
+        "Админ-команды доступны только администраторам."
     )
     await message.answer(text)
 
@@ -128,7 +128,7 @@ async def cmd_help(message: Message, settings: Settings, **_: Any) -> None:
 async def cmd_stats(message: Message, db: Database, settings: Settings, **_: Any) -> None:
     """Show moderation statistics."""
     if not message.from_user or not is_admin(message.from_user.id, settings):
-        await message.answer("You do not have permission to use this command.")
+        await message.answer("У вас нет прав для этой команды.")
         return
 
     today = await db.get_stats(days=1)
@@ -136,24 +136,24 @@ async def cmd_stats(message: Message, db: Database, settings: Settings, **_: Any
     total = await db.get_stats()
 
     text = (
-        "Statistics\n"
+        "Статистика\n"
         "\n"
-        "Today:\n"
-        f"  Messages checked: {_fmt_number(today['messages_checked'])}\n"
-        f"  Spam detected: {_fmt_number(today['spam_detected'])}\n"
-        f"  Users banned: {_fmt_number(today['users_banned'])}\n"
+        "Сегодня:\n"
+        f"  Проверено сообщений: {_fmt_number(today['messages_checked'])}\n"
+        f"  Обнаружено спама: {_fmt_number(today['spam_detected'])}\n"
+        f"  Забанено: {_fmt_number(today['users_banned'])}\n"
         "\n"
-        "Last 7 days:\n"
-        f"  Checked: {_fmt_number(week['messages_checked'])}\n"
-        f"  Spam: {_fmt_number(week['spam_detected'])}\n"
-        f"  Banned: {_fmt_number(week['users_banned'])}\n"
-        f"  False positives: {_fmt_number(week['false_positives'])}\n"
+        "За 7 дней:\n"
+        f"  Проверено: {_fmt_number(week['messages_checked'])}\n"
+        f"  Спам: {_fmt_number(week['spam_detected'])}\n"
+        f"  Забанено: {_fmt_number(week['users_banned'])}\n"
+        f"  Ложные срабатывания: {_fmt_number(week['false_positives'])}\n"
         "\n"
-        "All time:\n"
-        f"  Checked: {_fmt_number(total['messages_checked'])}\n"
-        f"  Spam: {_fmt_number(total['spam_detected'])}\n"
-        f"  Banned: {_fmt_number(total['users_banned'])}\n"
-        f"  False positives: {_fmt_number(total['false_positives'])}"
+        "За всё время:\n"
+        f"  Проверено: {_fmt_number(total['messages_checked'])}\n"
+        f"  Спам: {_fmt_number(total['spam_detected'])}\n"
+        f"  Забанено: {_fmt_number(total['users_banned'])}\n"
+        f"  Ложные срабатывания: {_fmt_number(total['false_positives'])}"
     )
     await message.answer(text)
     logger.info("cmd.stats", admin_id=message.from_user.id)
@@ -167,18 +167,18 @@ async def cmd_stats(message: Message, db: Database, settings: Settings, **_: Any
 async def cmd_status(message: Message, settings: Settings, **_: Any) -> None:
     """Show bot operational status."""
     if not message.from_user or not is_admin(message.from_user.id, settings):
-        await message.answer("You do not have permission to use this command.")
+        await message.answer("У вас нет прав для этой команды.")
         return
 
     text = (
-        "Bot status\n"
+        "Состояние бота\n"
         "\n"
-        f"Uptime: {_uptime()}\n"
-        f"AI model: {settings.ai_model}\n"
-        f"Confidence threshold: {settings.spam_confidence_threshold:.0%}\n"
-        f"Rate limit: {settings.max_ai_calls_per_minute} calls/min\n"
-        f"Max retries: {settings.openrouter_max_retries}\n"
-        f"Timeout: {settings.openrouter_timeout}s"
+        f"Аптайм: {_uptime()}\n"
+        f"AI модель: {settings.ai_model}\n"
+        f"Порог уверенности: {settings.spam_confidence_threshold:.0%}\n"
+        f"Лимит запросов: {settings.max_ai_calls_per_minute}/мин\n"
+        f"Макс. повторов: {settings.openrouter_max_retries}\n"
+        f"Таймаут: {settings.openrouter_timeout}с"
     )
     await message.answer(text)
     logger.info("cmd.status", admin_id=message.from_user.id)
@@ -192,14 +192,14 @@ async def cmd_status(message: Message, settings: Settings, **_: Any) -> None:
 async def cmd_whitelist(message: Message, db: Database, settings: Settings, **_: Any) -> None:
     """Manage the whitelist: add / remove / list."""
     if not message.from_user or not is_admin(message.from_user.id, settings):
-        await message.answer("You do not have permission to use this command.")
+        await message.answer("У вас нет прав для этой команды.")
         return
 
     parts = (message.text or "").split()
     # Expected: /whitelist <subcommand> [<user_id>]
     if len(parts) < 2:
         await message.answer(
-            "Usage:\n"
+            "Использование:\n"
             "/whitelist add <user_id>\n"
             "/whitelist remove <user_id>\n"
             "/whitelist list"
@@ -212,10 +212,10 @@ async def cmd_whitelist(message: Message, db: Database, settings: Settings, **_:
     if subcommand == "list":
         users = await db.get_whitelist()
         if not users:
-            await message.answer("Whitelist is empty.")
+            await message.answer("Вайтлист пуст.")
             return
 
-        lines: list[str] = ["Whitelisted users:\n"]
+        lines: list[str] = ["Пользователи в вайтлисте:\n"]
         for u in users:
             username_part = f" (@{u['username']})" if u.get("username") else ""
             lines.append(f"  {u['user_id']}{username_part}")
@@ -226,18 +226,18 @@ async def cmd_whitelist(message: Message, db: Database, settings: Settings, **_:
     # --- add / remove ---
     if subcommand in ("add", "remove"):
         if len(parts) < 3:
-            await message.answer(f"Usage: /whitelist {subcommand} <user_id>")
+            await message.answer(f"Использование: /whitelist {subcommand} <user_id>")
             return
 
         try:
             target_user_id = int(parts[2])
         except ValueError:
-            await message.answer("Invalid user_id. Must be a number.")
+            await message.answer("Неверный user_id. Должно быть число.")
             return
 
         if subcommand == "add":
             await db.add_to_whitelist(target_user_id, added_by=message.from_user.id)
-            await message.answer(f"User {target_user_id} added to whitelist.")
+            await message.answer(f"Пользователь {target_user_id} добавлен в вайтлист.")
             logger.info(
                 "cmd.whitelist_add",
                 admin_id=message.from_user.id,
@@ -246,9 +246,9 @@ async def cmd_whitelist(message: Message, db: Database, settings: Settings, **_:
         else:
             removed = await db.remove_from_whitelist(target_user_id)
             if removed:
-                await message.answer(f"User {target_user_id} removed from whitelist.")
+                await message.answer(f"Пользователь {target_user_id} удалён из вайтлиста.")
             else:
-                await message.answer(f"User {target_user_id} was not in the whitelist.")
+                await message.answer(f"Пользователь {target_user_id} не был в вайтлисте.")
             logger.info(
                 "cmd.whitelist_remove",
                 admin_id=message.from_user.id,
@@ -258,7 +258,7 @@ async def cmd_whitelist(message: Message, db: Database, settings: Settings, **_:
         return
 
     await message.answer(
-        "Unknown subcommand. Use: add, remove, or list."
+        "Неизвестная подкоманда. Используйте: add, remove или list."
     )
 
 
@@ -270,18 +270,18 @@ async def cmd_whitelist(message: Message, db: Database, settings: Settings, **_:
 async def cmd_unban(message: Message, db: Database, settings: Settings, **_: Any) -> None:
     """Unban a user by user_id."""
     if not message.from_user or not is_admin(message.from_user.id, settings):
-        await message.answer("You do not have permission to use this command.")
+        await message.answer("У вас нет прав для этой команды.")
         return
 
     parts = (message.text or "").split()
     if len(parts) < 2:
-        await message.answer("Usage: /unban <user_id>")
+        await message.answer("Использование: /unban <user_id>")
         return
 
     try:
         target_user_id = int(parts[1])
     except ValueError:
-        await message.answer("Invalid user_id. Must be a number.")
+        await message.answer("Неверный user_id. Должно быть число.")
         return
 
     # Unban in all chats where the user is banned
@@ -305,11 +305,11 @@ async def cmd_unban(message: Message, db: Database, settings: Settings, **_: Any
         )
 
     if unbanned:
-        await message.answer(f"User {target_user_id} has been unbanned.")
+        await message.answer(f"Пользователь {target_user_id} разбанен.")
     else:
         await message.answer(
-            f"User {target_user_id} was not found in the ban list "
-            "(may already be unbanned). Telegram ban lifted if present."
+            f"Пользователь {target_user_id} не найден в списке банов "
+            "(возможно, уже разбанен). Бан в Telegram снят, если был."
         )
 
     logger.info(
@@ -328,7 +328,7 @@ async def cmd_unban(message: Message, db: Database, settings: Settings, **_: Any
 async def cmd_recent(message: Message, db: Database, settings: Settings, **_: Any) -> None:
     """Show last 10 moderation decisions."""
     if not message.from_user or not is_admin(message.from_user.id, settings):
-        await message.answer("You do not have permission to use this command.")
+        await message.answer("У вас нет прав для этой команды.")
         return
 
     try:
@@ -344,14 +344,14 @@ async def cmd_recent(message: Message, db: Database, settings: Settings, **_: An
         rows = await cursor.fetchall()
     except Exception as exc:
         logger.error("cmd.recent_db_error", error=str(exc))
-        await message.answer("Failed to retrieve recent decisions.")
+        await message.answer("Не удалось получить данные.")
         return
 
     if not rows:
-        await message.answer("No moderation decisions recorded yet.")
+        await message.answer("Решений модерации пока нет.")
         return
 
-    lines: list[str] = ["Last 10 decisions:\n"]
+    lines: list[str] = ["Последние 10 решений:\n"]
     for row in rows:
         r = dict(row)
         spam_icon = "SPAM" if r["verdict_spam"] else "OK"
@@ -384,19 +384,19 @@ async def callback_unban(callback: CallbackQuery, db: Database, settings: Settin
     Callback data format: ``unban:<chat_id>:<user_id>``
     """
     if not callback.from_user or not is_admin(callback.from_user.id, settings):
-        await callback.answer("You do not have permission.", show_alert=True)
+        await callback.answer("У вас нет прав.", show_alert=True)
         return
 
     data = (callback.data or "").split(":")
     if len(data) != 3:
-        await callback.answer("Invalid callback data.", show_alert=True)
+        await callback.answer("Неверные данные.", show_alert=True)
         return
 
     try:
         chat_id = int(data[1])
         user_id = int(data[2])
     except ValueError:
-        await callback.answer("Invalid callback data.", show_alert=True)
+        await callback.answer("Неверные данные.", show_alert=True)
         return
 
     # 1. Unban via Telegram API
@@ -425,13 +425,13 @@ async def callback_unban(callback: CallbackQuery, db: Database, settings: Settin
             admin_name = callback.from_user.first_name or str(callback.from_user.id)
             await callback.message.edit_text(
                 f"{callback.message.text}\n\n"
-                f"Unbanned by administrator ({admin_name})",
+                f"Разбанен администратором ({admin_name})",
                 reply_markup=None,
             )
         except Exception as exc:
             logger.warning("callback.edit_message_error", error=str(exc))
 
-    await callback.answer("User unbanned.", show_alert=False)
+    await callback.answer("Пользователь разбанен.", show_alert=False)
     logger.info(
         "callback.unban",
         admin_id=callback.from_user.id,

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     channel_id: int
 
     # --- AI settings -------------------------------------------------------------
-    ai_model: str = "anthropic/claude-sonnet-4"
+    ai_model: str = "anthropic/claude-sonnet-4.6"
     spam_confidence_threshold: float = 0.7
     max_message_length: int = 4000
     max_few_shot_examples: int = 10

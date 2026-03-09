@@ -47,22 +47,34 @@ async def _process_message(
     """Core message processing logic shared by new and edited message handlers."""
     today_str = date.today().isoformat()
 
+    logger.info(
+        "message.received",
+        chat_id=message.chat.id,
+        chat_type=message.chat.type,
+        user_id=message.from_user.id if message.from_user else None,
+        text_preview=(message.text or message.caption or "")[:50],
+    )
+
     # --- Guard clauses ---
     if message.from_user is None:
-        # Channel posts forwarded into the linked group have no from_user
+        logger.info("message.skip_no_user")
         return
 
     if message.from_user.is_bot:
+        logger.info("message.skip_is_bot", user_id=message.from_user.id)
         return
 
     if is_admin(message.from_user.id, settings):
+        logger.info("message.skip_admin", user_id=message.from_user.id)
         return
 
     if await db.is_whitelisted(message.from_user.id):
+        logger.info("message.skip_whitelisted", user_id=message.from_user.id)
         return
 
     text = message.text or message.caption or ""
     if not text.strip():
+        logger.info("message.skip_empty")
         return
 
     # Always count as checked
@@ -205,14 +217,14 @@ async def _notify_admins(
         truncated_text += "..."
 
     notification = (
-        "Auto-ban\n"
+        "Авто-бан\n"
         "\n"
-        f"User: {first_name}{username_part} [{user.id}]\n"
-        f"Chat: {chat_title}\n"
-        f"Reason: {verdict.reason}\n"
-        f"Confidence: {verdict.confidence:.0%}\n"
+        f"Пользователь: {first_name}{username_part} [{user.id}]\n"
+        f"Чат: {chat_title}\n"
+        f"Причина: {verdict.reason}\n"
+        f"Уверенность: {verdict.confidence:.0%}\n"
         "\n"
-        f"Message:\n"
+        f"Сообщение:\n"
         f"{truncated_text}"
     )
 
@@ -220,7 +232,7 @@ async def _notify_admins(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="Unban",
+                    text="Разбанить",
                     callback_data=f"unban:{message.chat.id}:{user.id}",
                 ),
             ],
